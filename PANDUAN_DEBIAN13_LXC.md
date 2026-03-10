@@ -125,6 +125,11 @@ chmod +x scripts/bootstrap_moodle.sh
 ./scripts/bootstrap_moodle.sh moodle MOODLE_501_STABLE
 ```
 
+Catatan:
+
+- Jika folder `moodle` sudah berisi perubahan lokal yang belum di-commit, selesaikan dulu commit/stash sebelum menjalankan update.
+- Script ini sinkron ke branch stabil resmi Moodle (`MOODLE_501_STABLE`).
+
 ## 7) Jalankan instalasi otomatis Moodle (direkomendasikan)
 
 Script ini akan:
@@ -132,6 +137,8 @@ Script ini akan:
 - menyalakan semua service Docker
 - install Moodle via CLI
 - skip instalasi jika `config.php` sudah ada (idempotent)
+- inject konfigurasi session Redis ke `moodle/config.php` secara idempotent
+- memastikan permission baca `config.php` tetap aman untuk worker PHP-FPM
 
 Jalankan:
 
@@ -147,6 +154,15 @@ Jika sukses, Moodle bisa diakses di URL sesuai `MOODLE_URL`.
 ```bash
 docker compose ps
 docker compose logs -f --tail=100
+```
+
+Untuk cek spesifik per service:
+
+```bash
+docker compose logs web --tail=100
+docker compose logs php --tail=100
+docker compose logs db --tail=100
+docker compose logs redis --tail=100
 ```
 
 Service utama:
@@ -195,9 +211,17 @@ docker compose up -d --build
 Update core Moodle ke commit terbaru branch stabil:
 
 ```bash
+git pull --ff-only origin main
 ./scripts/bootstrap_moodle.sh moodle MOODLE_501_STABLE
 docker compose exec -T php php /var/www/html/admin/cli/upgrade.php --non-interactive
+./scripts/install_moodle_cli.sh
 ```
+
+Kenapa jalankan lagi `install_moodle_cli.sh` setelah update:
+
+- script bersifat idempotent, jadi aman dijalankan ulang
+- memastikan konfigurasi Redis session tetap ada
+- sekaligus memperbaiki permission `config.php` bila berubah setelah update
 
 ## 11.1) Tuning baseline untuk trafik lebih tinggi
 
@@ -237,6 +261,12 @@ Jika gagal konek database:
 - Pastikan `DB_NAME`, `DB_USER`, `DB_PASSWORD` di `.env` sama dengan yang dipakai saat install.
 - Cek container `db` sudah `healthy`.
 
+Jika session sering logout sendiri atau muncul error Redis:
+
+- Cek `REDIS_HOST`, `REDIS_PORT`, `REDIS_PREFIX` di `.env`.
+- Cek `docker compose logs redis --tail=100`.
+- Jalankan ulang `./scripts/install_moodle_cli.sh` untuk memastikan blok konfigurasi Redis sudah terpasang di `config.php`.
+
 Jika URL salah (redirect ke localhost atau domain lama):
 
 1. Perbaiki `MOODLE_URL` di `.env`.
@@ -261,6 +291,7 @@ Minimal backup 3 komponen:
 - folder project repo ini
 - folder `moodledata`
 - volume database `db_data`
+- volume Redis `redis_data` (jika ingin mempertahankan data persistence Redis)
 
 Contoh backup SQL cepat:
 
