@@ -1,0 +1,48 @@
+services:
+  db:
+    image: mariadb:11.4
+    container_name: moodle_db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: moodle_php
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ./moodle:/var/www/html
+      - ./moodledata:/var/www/moodledata
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: moodle_web
+    restart: unless-stopped
+    ports:
+      - "${MOODLE_PORT}:80"
+    volumes:
+      - ./moodle:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+
+volumes:
+  db_data:
