@@ -64,22 +64,22 @@ ensure_url_proxy_config() {
 	fi
 
 	if grep -q '^\$CFG->wwwroot' "$cfg"; then
-		sed -i "s|^\\\$CFG->wwwroot.*|\\$CFG->wwwroot   = '${MOODLE_URL}';|" "$cfg"
+		sed -i "s|^\$CFG->wwwroot.*|\$CFG->wwwroot   = '${MOODLE_URL}';|" "$cfg"
 	fi
 
 	if grep -q '^\$CFG->reverseproxy' "$cfg"; then
-		sed -i "s|^\\\$CFG->reverseproxy.*|\\$CFG->reverseproxy = false;|" "$cfg"
+		sed -i "s|^\$CFG->reverseproxy.*|\$CFG->reverseproxy = false;|" "$cfg"
 	else
 		local line tmp
 		line=$(grep -n "require_once(__DIR__ . '/lib/setup.php');" "$cfg" | head -n1 | cut -d: -f1 || true)
 		if [[ -n "$line" ]]; then
 			tmp=$(mktemp)
 			head -n $((line - 1)) "$cfg" > "$tmp"
-			echo "\\$CFG->reverseproxy = false;" >> "$tmp"
+			echo '$CFG->reverseproxy = false;' >> "$tmp"
 			tail -n +"$line" "$cfg" >> "$tmp"
 			mv -f "$tmp" "$cfg"
 		else
-			echo "\\$CFG->reverseproxy = false;" >> "$cfg"
+			echo '$CFG->reverseproxy = false;' >> "$cfg"
 		fi
 	fi
 }
