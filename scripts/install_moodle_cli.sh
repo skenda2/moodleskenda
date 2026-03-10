@@ -56,6 +56,34 @@ EOF
 	fi
 }
 
+ensure_url_proxy_config() {
+	local cfg="$ROOT_DIR/moodle/config.php"
+
+	if [[ ! -f "$cfg" ]]; then
+		return 0
+	fi
+
+	if grep -q '^\$CFG->wwwroot' "$cfg"; then
+		sed -i "s|^\\\$CFG->wwwroot.*|\\$CFG->wwwroot   = '${MOODLE_URL}';|" "$cfg"
+	fi
+
+	if grep -q '^\$CFG->reverseproxy' "$cfg"; then
+		sed -i "s|^\\\$CFG->reverseproxy.*|\\$CFG->reverseproxy = false;|" "$cfg"
+	else
+		local line tmp
+		line=$(grep -n "require_once(__DIR__ . '/lib/setup.php');" "$cfg" | head -n1 | cut -d: -f1 || true)
+		if [[ -n "$line" ]]; then
+			tmp=$(mktemp)
+			head -n $((line - 1)) "$cfg" > "$tmp"
+			echo "\\$CFG->reverseproxy = false;" >> "$tmp"
+			tail -n +"$line" "$cfg" >> "$tmp"
+			mv -f "$tmp" "$cfg"
+		else
+			echo "\\$CFG->reverseproxy = false;" >> "$cfg"
+		fi
+	fi
+}
+
 if [[ ! -f "$ENV_FILE" ]]; then
 	echo "File .env belum ada. Jalankan: cp .env.example .env"
 	exit 1
@@ -89,6 +117,7 @@ cd "$ROOT_DIR"
 docker compose up -d --build
 
 if docker compose exec -T php test -f /var/www/html/config.php; then
+	ensure_url_proxy_config
 	ensure_redis_session_config
 	ensure_config_readable
 	echo "Moodle sudah terpasang (config.php ditemukan). Install dilewati."
@@ -114,6 +143,7 @@ docker compose exec -T php php /var/www/html/admin/cli/install.php \
 	--adminemail="${MOODLE_ADMIN_EMAIL}"
 
 ensure_redis_session_config
+ensure_url_proxy_config
 ensure_config_readable
 
 echo "Instalasi Moodle selesai. Buka: ${MOODLE_URL}"
