@@ -82,6 +82,11 @@ cp .env.example .env
 nano .env
 ```
 
+Catatan penting:
+
+- File `.env` diparsing oleh script Bash (`source .env`), jadi nilai yang berisi spasi harus pakai kutip.
+- Contoh benar: `MOODLE_FULLNAME="Moodle Skenda"` dan `MOODLE_SHORTNAME="Skenda LMS"`.
+
 Minimal variabel yang wajib dicek:
 
 - `MOODLE_PORT` (contoh `8080`)
@@ -93,6 +98,18 @@ Minimal variabel yang wajib dicek:
 - `MOODLE_ADMIN_USER`
 - `MOODLE_ADMIN_PASS`
 - `MOODLE_ADMIN_EMAIL`
+- `REDIS_HOST` (default `redis`)
+- `REDIS_PORT` (default `6379`)
+- `REDIS_PREFIX` (contoh `moodle_`)
+
+Contoh nilai aman untuk awal (sesuaikan ulang sebelum produksi):
+
+```dotenv
+MOODLE_URL=http://IP_LXC:8080
+MOODLE_ADMIN_PASS=GantiPasswordKuat123!
+DB_ROOT_PASSWORD=ganti_root_password_kuat
+DB_PASSWORD=ganti_db_password_kuat
+```
 
 Penting:
 
@@ -135,6 +152,7 @@ docker compose logs -f --tail=100
 Service utama:
 
 - `db` (MariaDB)
+- `redis` (session/cache backend)
 - `php` (PHP-FPM 8.2)
 - `web` (Nginx)
 
@@ -181,6 +199,27 @@ Update core Moodle ke commit terbaru branch stabil:
 docker compose exec -T php php /var/www/html/admin/cli/upgrade.php --non-interactive
 ```
 
+## 11.1) Tuning baseline untuk trafik lebih tinggi
+
+Repo ini sudah menyiapkan tuning dasar di:
+
+- `docker/php/Dockerfile` (OPcache dan PHP-FPM pool)
+- `docker/nginx/default.conf` (FastCGI timeout/buffer + cache static)
+- `docker/db/my.cnf` (MariaDB)
+- `docker-compose.yml` + `scripts/install_moodle_cli.sh` (Redis session backend)
+
+Terapkan ulang setelah update repo:
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+Catatan penting kapasitas:
+
+- Nilai `innodb_buffer_pool_size=1G` di `docker/db/my.cnf` cocok untuk host dengan RAM memadai.
+- Jika RAM host/LXC kecil, turunkan dulu ke `512M` untuk menghindari OOM.
+
 ## 12) Troubleshooting cepat
 
 Jika web tidak bisa diakses:
@@ -206,6 +245,13 @@ Jika URL salah (redirect ke localhost atau domain lama):
 ```bash
 docker compose exec -T php php /var/www/html/admin/cli/cfg.php --name=wwwroot --set="http://IP_LXC:8080"
 docker compose exec -T php php /var/www/html/admin/cli/purge_caches.php
+```
+
+Jika muncul error `Permission denied` saat membaca `config.php`:
+
+```bash
+docker compose exec -T php sh -lc 'chmod 0644 /var/www/html/config.php && chmod 0755 /var/www /var/www/html /var/www/html/public'
+docker compose restart php web
 ```
 
 ## 13) Backup yang disarankan

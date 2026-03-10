@@ -24,6 +24,9 @@ Setup Moodle sendiri dengan core resmi Moodle 5.1.3+ pada branch `MOODLE_501_STA
 	cp .env.example .env
 	```
 
+	Catatan: file `.env` dibaca oleh script Bash, jadi nilai yang mengandung spasi wajib diberi kutip.
+	Contoh: `MOODLE_FULLNAME="Moodle Skenda"`.
+
 2. Clone core Moodle branch stabil yang diminta:
 
 	```bash
@@ -43,15 +46,15 @@ Setup Moodle sendiri dengan core resmi Moodle 5.1.3+ pada branch `MOODLE_501_STA
 	docker compose up -d --build
 	```
 
-5. Buka installer Moodle:
+5. Buka installer Moodle sesuai nilai `MOODLE_URL` di `.env`:
 
 	```text
-	http://localhost:8080
+	http://IP_LXC:8080
 	```
 
 ## Instalasi otomatis via CLI (disarankan)
 
-1. Pastikan `.env` sudah disalin dari `.env.example`, lalu sesuaikan variabel admin/site.
+1. Pastikan `.env` sudah disalin dari `.env.example`, lalu sesuaikan variabel admin/site/database (terutama password dan URL).
 2. Jalankan instalasi otomatis:
 
 	```bash
@@ -90,7 +93,7 @@ Perintah di atas akan:
 
 ## Variabel penting `.env`
 
-- `MOODLE_URL` URL akses Moodle lokal
+- `MOODLE_URL` URL akses Moodle (gunakan IP/domain yang bisa diakses klien, bukan `localhost` untuk akses lintas perangkat)
 - `MOODLE_PORT` port host untuk Nginx
 - `MOODLE_FULLNAME` nama situs Moodle
 - `MOODLE_SHORTNAME` nama pendek situs
@@ -98,6 +101,23 @@ Perintah di atas akan:
 - `MOODLE_ADMIN_USER` user admin awal
 - `MOODLE_ADMIN_PASS` password admin awal
 - `MOODLE_ADMIN_EMAIL` email admin awal
+- `DB_ROOT_PASSWORD` password root MariaDB
+- `DB_NAME` nama database Moodle
+- `DB_USER` user database Moodle
+- `DB_PASSWORD` password user database Moodle
+- `REDIS_HOST` host Redis untuk session/cache (default `redis`)
+- `REDIS_PORT` port Redis (default `6379`)
+- `REDIS_PREFIX` prefix key Redis (default `moodle_`)
+
+## Redis session backend
+
+- Service Redis sudah aktif di Docker Compose.
+- Script `scripts/install_moodle_cli.sh` akan menambahkan konfigurasi session Redis ke `moodle/config.php` secara idempotent.
+- Jika Moodle sudah terpasang sebelum fitur ini, jalankan ulang script install agar konfigurasi Redis diinjeksi:
+
+```bash
+./scripts/install_moodle_cli.sh
+```
 
 ## Lokasi penting
 
