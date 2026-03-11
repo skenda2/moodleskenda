@@ -3,6 +3,7 @@
 Setup Moodle sendiri dengan core resmi Moodle 5.1.3+ pada branch `MOODLE_501_STABLE`.
 
 Panduan khusus test beban tersedia di [PANDUAN_TEST_BEBAN.md](/workspaces/moodleskenda/PANDUAN_TEST_BEBAN.md).
+Panduan khusus WSL2 + Docker Desktop tersedia di [PANDUAN_WSL2_DOCKER_DESKTOP.md](/workspaces/moodleskenda/PANDUAN_WSL2_DOCKER_DESKTOP.md).
 
 ## Prasyarat
 
