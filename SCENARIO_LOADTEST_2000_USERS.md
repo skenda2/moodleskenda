@@ -114,6 +114,20 @@ Untuk cek DB cepat:
 docker compose exec -T db mariadb -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -e "SHOW FULL PROCESSLIST;"
 ```
 
+Untuk snapshot monitoring otomatis selama test:
+
+```bash
+INTERVAL=15 DURATION=1800 ./scripts/monitor_loadtest.sh baseline-300
+```
+
+Untuk persiapan per fase secara konsisten:
+
+```bash
+./scripts/prepare_loadtest_phase.sh 300
+./scripts/prepare_loadtest_phase.sh 700
+./scripts/prepare_loadtest_phase.sh 1200
+```
+
 ## 8) Template Eksekusi Uji (Checklist)
 
 Sebelum test:
@@ -152,6 +166,14 @@ Prioritas tuning berikutnya:
 1. PHP-FPM pool tuning:
 - Sesuaikan pm.max_children dengan RAM aktual host.
 - Pantau apakah worker sering habis.
+
+Gunakan profil siap pakai untuk iterasi awal:
+
+```bash
+./scripts/apply_loadtest_profile.sh 300
+./scripts/apply_loadtest_profile.sh 700
+./scripts/apply_loadtest_profile.sh 1200
+```
 
 2. MariaDB tuning:
 - Naikkan innodb_buffer_pool_size jika RAM cukup.

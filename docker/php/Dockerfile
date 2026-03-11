@@ -47,19 +47,10 @@ RUN { \
     echo "opcache.jit=off"; \
     } > /usr/local/etc/php/conf.d/moodle.ini
 
-RUN { \
-    echo "[www]"; \
-    echo "pm=dynamic"; \
-    echo "pm.max_children=60"; \
-    echo "pm.start_servers=8"; \
-    echo "pm.min_spare_servers=8"; \
-    echo "pm.max_spare_servers=24"; \
-    echo "pm.max_requests=500"; \
-    echo "request_terminate_timeout=300s"; \
-    echo "request_slowlog_timeout=10s"; \
-    echo "slowlog=/proc/self/fd/2"; \
-    echo "clear_env=no"; \
-    echo "catch_workers_output=yes"; \
-} > /usr/local/etc/php-fpm.d/zz-moodle-pool.conf
+COPY docker/php/entrypoint.sh /usr/local/bin/moodleskenda-entrypoint
+RUN chmod +x /usr/local/bin/moodleskenda-entrypoint
 
 WORKDIR /var/www/html
+
+ENTRYPOINT ["moodleskenda-entrypoint"]
+CMD ["php-fpm"]

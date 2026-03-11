@@ -7,6 +7,29 @@ ENV_FILE="$ROOT_DIR/.env"
 REDIS_HOST=${REDIS_HOST:-redis}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_PREFIX=${REDIS_PREFIX:-moodle_}
+MOODLE_REVERSEPROXY=${MOODLE_REVERSEPROXY:-false}
+MOODLE_SSLPROXY=${MOODLE_SSLPROXY:-false}
+
+require_non_placeholder_secrets() {
+	local failed=0
+	local value
+
+	for value in \
+		"${DB_ROOT_PASSWORD:-}" \
+		"${DB_PASSWORD:-}" \
+		"${MOODLE_ADMIN_PASS:-}"; do
+		case "$value" in
+			""|ganti_root_password_kuat|ganti_db_password_kuat|GantiPasswordKuat123!|Admin123!ChangeMe)
+				failed=1
+				;;
+		esac
+	done
+
+	if [[ "$failed" -eq 1 ]]; then
+		echo "Nilai password di .env masih placeholder. Ganti DB_ROOT_PASSWORD, DB_PASSWORD, dan MOODLE_ADMIN_PASS sebelum install."
+		exit 1
+	fi
+}
 
 ensure_config_readable() {
 	# On some hosts/LXC bind mounts, config.php can end up unreadable by php-fpm worker.
@@ -67,19 +90,35 @@ ensure_url_proxy_config() {
 		sed -i "s|^\$CFG->wwwroot.*|\$CFG->wwwroot   = '${MOODLE_URL}';|" "$cfg"
 	fi
 
+	if grep -q '^\$CFG->sslproxy' "$cfg"; then
+		sed -i "s|^\$CFG->sslproxy.*|\$CFG->sslproxy = ${MOODLE_SSLPROXY};|" "$cfg"
+	else
+		local line tmp
+		line=$(grep -n '^\$CFG->reverseproxy' "$cfg" | head -n1 | cut -d: -f1 || true)
+		if [[ -n "$line" ]]; then
+			tmp=$(mktemp)
+			head -n "$line" "$cfg" > "$tmp"
+			echo "\$CFG->sslproxy = ${MOODLE_SSLPROXY};" >> "$tmp"
+			tail -n +$((line + 1)) "$cfg" >> "$tmp"
+			mv -f "$tmp" "$cfg"
+		fi
+	fi
+
 	if grep -q '^\$CFG->reverseproxy' "$cfg"; then
-		sed -i "s|^\$CFG->reverseproxy.*|\$CFG->reverseproxy = false;|" "$cfg"
+		sed -i "s|^\$CFG->reverseproxy.*|\$CFG->reverseproxy = ${MOODLE_REVERSEPROXY};|" "$cfg"
 	else
 		local line tmp
 		line=$(grep -n "require_once(__DIR__ . '/lib/setup.php');" "$cfg" | head -n1 | cut -d: -f1 || true)
 		if [[ -n "$line" ]]; then
 			tmp=$(mktemp)
 			head -n $((line - 1)) "$cfg" > "$tmp"
-			echo '$CFG->reverseproxy = false;' >> "$tmp"
+			echo "\$CFG->reverseproxy = ${MOODLE_REVERSEPROXY};" >> "$tmp"
+			echo "\$CFG->sslproxy = ${MOODLE_SSLPROXY};" >> "$tmp"
 			tail -n +"$line" "$cfg" >> "$tmp"
 			mv -f "$tmp" "$cfg"
 		else
-			echo '$CFG->reverseproxy = false;' >> "$cfg"
+			echo "\$CFG->reverseproxy = ${MOODLE_REVERSEPROXY};" >> "$cfg"
+			echo "\$CFG->sslproxy = ${MOODLE_SSLPROXY};" >> "$cfg"
 		fi
 	fi
 }
@@ -103,6 +142,8 @@ MOODLE_SHORTNAME=${MOODLE_SHORTNAME:-Skenda LMS}
 MOODLE_ADMIN_USER=${MOODLE_ADMIN_USER:-admin}
 MOODLE_ADMIN_PASS=${MOODLE_ADMIN_PASS:-Admin123!ChangeMe}
 MOODLE_ADMIN_EMAIL=${MOODLE_ADMIN_EMAIL:-admin@example.local}
+
+require_non_placeholder_secrets
 
 if [[ ! -d "$ROOT_DIR/moodle" ]]; then
 	echo "Folder moodle belum ada. Jalankan bootstrap terlebih dulu."

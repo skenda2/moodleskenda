@@ -2,3 +2,4 @@
 moodle/
 moodledata/
 tmp/
+loadtest/users.csv
