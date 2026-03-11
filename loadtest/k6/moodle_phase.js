@@ -5,6 +5,7 @@ import { check, fail, sleep } from 'k6';
 
 const BASE_URL = (__ENV.K6_BASE_URL || 'http://web').replace(/\/$/, '');
 const COURSE_PATH = __ENV.K6_COURSE_PATH || '/my/courses.php';
+const HEALTH_PATH = __ENV.K6_HEALTH_PATH || '/login/index.php';
 const THINK_TIME = Number(__ENV.K6_THINK_TIME || 1);
 const LOGIN_EVERY_ITERATION = String(__ENV.K6_LOGIN_EVERY_ITERATION || 'false') === 'true';
 
@@ -106,8 +107,8 @@ let authenticated = false;
 export default function() {
     const user = getUser();
 
-    const health = http.get(`${BASE_URL}/healthz.php`, {
-        tags: { name: 'healthz' },
+    const health = http.get(`${BASE_URL}${HEALTH_PATH}`, {
+        tags: { name: 'health_probe' },
     });
     check(health, {
         'health endpoint healthy': (response) => response.status === 200,

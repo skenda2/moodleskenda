@@ -14,7 +14,7 @@ Catatan:
 
 ```bash
 docker compose ps
-curl -sS http://localhost:8080/healthz.php
+curl -I -sS http://localhost:8080/login/index.php
 ```
 
 2. Pastikan data uji siap sesuai [SCENARIO_LOADTEST_2000_USERS.md](/workspaces/moodleskenda/SCENARIO_LOADTEST_2000_USERS.md).
@@ -46,7 +46,7 @@ Pilihan cepat dari repo ini:
 
 ```bash
 docker compose ps
-curl -sS http://localhost:8080/healthz.php
+curl -I -sS http://localhost:8080/login/index.php
 docker compose logs --tail=100 php db redis web
 ```
 

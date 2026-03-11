@@ -38,10 +38,10 @@ Cek kesehatan awal:
 
 ```bash
 docker compose ps
-curl -sS http://localhost:8080/healthz.php
+curl -I -sS http://localhost:8080/login/index.php
 ```
 
-Jika output health menunjukkan `"ok":true`, stack siap lanjut.
+Jika respons `200 OK`, stack siap lanjut.
 
 ## 3. Hardening Singkat (Disarankan)
 
@@ -144,7 +144,7 @@ Isi snapshot mencakup:
 
 - `docker compose ps`
 - `docker stats --no-stream`
-- status `healthz.php`
+- status health probe (default `/login/index.php`)
 - status koneksi/processlist MariaDB
 
 ## 8. Cara Membaca Hasil Cepat
@@ -162,7 +162,7 @@ Perintah bantu:
 ```bash
 docker compose ps
 docker compose logs --tail=100 php db redis web
-curl -sS http://localhost:8080/healthz.php
+curl -I -sS http://localhost:8080/login/index.php
 ```
 
 ## 9. Troubleshooting Cepat

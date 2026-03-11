@@ -24,7 +24,7 @@ DB_NAME=${DB_NAME:-moodle}
 DB_USER=${DB_USER:-moodle}
 DB_PASSWORD=${DB_PASSWORD:-}
 MOODLE_PORT=${MOODLE_PORT:-8080}
-HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:${MOODLE_PORT}/healthz.php}
+HEALTH_URL=${HEALTH_URL:-http://127.0.0.1:${MOODLE_PORT}/login/index.php}
 
 meta_file="$RUN_DIR/meta.txt"
 {
@@ -44,7 +44,7 @@ capture_once() {
   printf 'sample=%s\ntimestamp=%s\n' "$sample" "$now" > "${prefix}.meta"
   docker compose ps > "${prefix}.compose-ps.txt"
   docker stats --no-stream moodle_web moodle_php moodle_db moodle_redis > "${prefix}.docker-stats.txt"
-  curl -sS "$HEALTH_URL" > "${prefix}.healthz.json" || true
+  curl -sS "$HEALTH_URL" > "${prefix}.health.json" || true
 
   if [[ -n "$DB_PASSWORD" ]]; then
     docker compose exec -T db mariadb -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -e "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL STATUS LIKE 'Threads_running'; SHOW FULL PROCESSLIST;" > "${prefix}.db.txt" 2>&1 || true

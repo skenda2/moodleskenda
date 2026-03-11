@@ -113,7 +113,7 @@ Perintah di atas akan:
 
 ## Healthcheck service
 
-- Service `web` dianggap sehat jika endpoint `healthz.php` merespons sukses dari dalam container.
+- Service `web` dianggap sehat jika halaman login Moodle merespons sukses dari dalam container.
 - Service `php` dianggap sehat jika PHP-FPM mendengarkan di port `9000`.
 - Status dapat dilihat dengan:
 
@@ -123,17 +123,12 @@ docker compose ps
 
 ## Endpoint observability ringan
 
-- Endpoint health end-to-end tersedia di `http://HOST:PORT/healthz.php`
-- Endpoint ini mengecek:
-	- `config.php` dapat dibaca
-	- `moodledata` ada dan writable
-	- koneksi query ringan ke MariaDB
-	- ping ke Redis
+- Probe yang selalu tersedia lintas instalasi: `http://HOST:PORT/login/index.php`
 
 Contoh cek cepat:
 
 ```bash
-curl -sS http://localhost:8080/healthz.php
+curl -I -sS http://localhost:8080/login/index.php
 ```
 
 ## Hardening `.env`
@@ -204,7 +199,7 @@ Output akan tersimpan di `tmp/loadtest-monitor/` dan berisi snapshot:
 
 - `docker compose ps`
 - `docker stats --no-stream`
-- response `healthz.php`
+- response health probe (default `/login/index.php`)
 - status koneksi dan processlist MariaDB
 
 ## Runbook fase load test
